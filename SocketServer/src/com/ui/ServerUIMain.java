@@ -12,9 +12,10 @@ import java.io.IOException;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
+import com.io.DataListener;
 import com.io.SocketServer;
  
-public class UIMain extends Component {
+public class ServerUIMain extends Component implements DataListener{
            
     BufferedImage img;
  
@@ -22,11 +23,13 @@ public class UIMain extends Component {
         g.drawImage(img, 0, 0, null);
     }
  
-    public UIMain() {
-
+    public ServerUIMain() {
+    	SocketServer server = new SocketServer();
+        server.setOnDataListener(this);
+        server.start();
     }
     
-    public void updateUI(byte[] data) {
+    private void updateUI(byte[] data) {
     	ByteArrayInputStream input = new ByteArrayInputStream(data);
     	try {
 			img = ImageIO.read(input);
@@ -56,11 +59,14 @@ public class UIMain extends Component {
                 }
             });
  
-        f.add(new UIMain());
+        f.add(new ServerUIMain());
         f.pack();
         f.setVisible(true);
-        
-        SocketServer server = new SocketServer();
-        server.start();
     }
+
+	@Override
+	public void onDirty(byte[] data) {
+		// TODO Auto-generated method stub
+		updateUI(data);
+	}
 }

@@ -32,6 +32,15 @@ public class SocketClient extends Thread {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
+		finally {
+			try {
+				mSocket.close();
+				mSocket = null;
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 		
 		System.out.println("data sent");
 	}

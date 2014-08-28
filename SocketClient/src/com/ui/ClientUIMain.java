@@ -23,15 +23,14 @@ import javax.swing.filechooser.FileNameExtensionFilter;
 import com.io.SocketClient;
 
  
-public class UIMain extends JPanel
+public class ClientUIMain extends JPanel
                              implements ActionListener {
     private JButton mLoad, mSend;
     private JFileChooser mFileChooser;
     private JLabel mImage;
     private byte[] mData;
-    private SocketClient mSocketClient;
  
-    public UIMain() {
+    public ClientUIMain() {
         super(new BorderLayout());
 		
         //Create a file chooser
@@ -58,9 +57,6 @@ public class UIMain extends JPanel
 		mImage.setSize(480, 640);
 		imageViewer.add(mImage);
 		add(imageViewer, BorderLayout.CENTER);
-		
-		// socket client
-		mSocketClient = new SocketClient();
     }
 
     @Override
@@ -68,7 +64,7 @@ public class UIMain extends JPanel
 
         if (e.getSource() == mLoad) {
 	        
-            int returnVal = mFileChooser.showOpenDialog(UIMain.this);
+            int returnVal = mFileChooser.showOpenDialog(ClientUIMain.this);
  
             if (returnVal == JFileChooser.APPROVE_OPTION) {
                 File file = mFileChooser.getSelectedFile();     
@@ -89,7 +85,9 @@ public class UIMain extends JPanel
             }
         } 
         else if (e.getSource() == mSend) {
-        	mSocketClient.send(mData);
+    		// socket client
+    		SocketClient socketClient = new SocketClient();
+    		socketClient.send(mData);
         	mSend.setEnabled(false);
         }
     }
@@ -100,7 +98,7 @@ public class UIMain extends JPanel
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
  
         //Add content to the window.
-        frame.add(new UIMain());
+        frame.add(new ClientUIMain());
  
         //Display the window.
         frame.pack();
