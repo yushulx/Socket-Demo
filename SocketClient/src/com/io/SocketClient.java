@@ -1,5 +1,6 @@
 package com.io;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.net.Socket;
@@ -21,10 +22,35 @@ public class SocketClient extends Thread {
 		
 		try {
 			mSocket = new Socket("127.0.0.1", 2014);
-			BufferedOutputStream stream = new BufferedOutputStream(mSocket.getOutputStream());
-			stream.write(mData);
-			stream.flush();
-			stream.close();
+			BufferedOutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
+			BufferedInputStream inputStream = new BufferedInputStream(mSocket.getInputStream());
+			byte[] buff = new byte[1024];
+			int len = 0;
+            String msg = null;
+            outputStream.write(new String("who").getBytes());
+            outputStream.flush();
+            boolean isOver = false;
+            
+            while (!isOver && (len = inputStream.read(buff)) != -1) {
+                msg = new String(buff, 0, len);
+
+                System.out.println("client msg " + msg);
+                
+                if (msg.equals("who")) {
+                    System.out.println(msg);
+                    outputStream.write(new String("data").getBytes());
+                    outputStream.flush();
+                }
+                else if (msg.equals("data")) {
+                    System.out.println(msg);
+                    isOver = true;
+                    outputStream.write(mData);
+                    outputStream.flush();
+                    break;
+                }
+            }
+
+			outputStream.close();
 		} catch (UnknownHostException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

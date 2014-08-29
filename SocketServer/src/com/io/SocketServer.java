@@ -1,14 +1,11 @@
 package com.io;
 
 import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.ArrayList;
 
 public class SocketServer extends Thread {
 	private ServerSocket mServer;
@@ -24,9 +21,9 @@ public class SocketServer extends Thread {
 
 		System.out.println("server's waiting");
 		BufferedInputStream inputStream = null;
+		BufferedOutputStream outputStream = null;
 		Socket socket = null;
 		ByteArrayOutputStream byteArray = null;
-		ArrayList<Byte> array = new  ArrayList<Byte>();
 		try {
 			mServer = new ServerSocket(2014);
 			while (!Thread.currentThread().isInterrupted()) {
@@ -39,16 +36,32 @@ public class SocketServer extends Thread {
 				System.out.println("new socket");
 				
 				inputStream = new BufferedInputStream(socket.getInputStream());
+				outputStream = new BufferedOutputStream(socket.getOutputStream());
+				
 				byte[] buff = new byte[1024];
 				int len = 0;
+				String msg = null;
 				while ((len = inputStream.read(buff)) != -1) {
-					byteArray.write(buff, 0, len);
+					
+					msg = new String(buff, 0, len);
+					if (msg.equals("who")) {
+					    System.out.println("who's sending msg?");
+					    outputStream.write(new String("who").getBytes());
+			            outputStream.flush();
+					}
+					else if (msg.equals("data")) {
+					    System.out.println("receiving data...");
+					    outputStream.write(new String("data").getBytes());
+	                    outputStream.flush();
+					}
+					else {
+					    byteArray.write(buff, 0, len);
+					}
 				}
 				
 				System.out.println("received file");
 
 				if (mDataListener != null) {
-//					byteArray.flush();
 					mDataListener.onDirty(byteArray.toByteArray());
 				}
 
