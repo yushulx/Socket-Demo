@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import com.data.BufferManager;
 import com.data.DataListener;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -16,8 +17,10 @@ import com.google.gson.JsonParser;
 public class SocketServer extends Thread {
 	private ServerSocket mServer;
 	private DataListener mDataListener;
+	private BufferManager mBufferManager;
 
 	public SocketServer() {
+	    
 	}
 
 	@Override
@@ -72,6 +75,8 @@ public class SocketServer extends Thread {
 	                        if (element != null) {
 	                            int length = element.getAsInt();
 	                            imageBuff = new byte[length];
+	                            mBufferManager = new BufferManager(length);
+	                            mBufferManager.setOnDataListener(mDataListener);
 	                            break;
 	                        }
 	                        
@@ -93,15 +98,18 @@ public class SocketServer extends Thread {
 		            int buffLen = imageBuff.length;
 				    while ((len = inputStream.read(imageBuff)) != -1) {
 				        System.out.println("len = " + len);
-	                    byteArray.write(imageBuff, 0, len);
-	                    sum += len;
+//	                    byteArray.write(imageBuff, 0, len);
+//	                    sum += len;
+//	                    
+//	                    if (mDataListener != null && sum == buffLen) {
+//	                        sum = 0;
+//	                        mDataListener.onDirty(byteArray.toByteArray());
+//	                        System.out.println("received file");
+//	                        byteArray.reset();
+//	                    }
 	                    
-	                    if (mDataListener != null && sum == buffLen) {
-	                        sum = 0;
-	                        mDataListener.onDirty(byteArray.toByteArray());
-	                        System.out.println("received file");
-	                        byteArray.reset();
-	                    }
+	                 // buffer manager
+	                    mBufferManager.fillBuffer(imageBuff, len);
 	                }
 				}
 				

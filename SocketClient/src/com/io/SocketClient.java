@@ -60,6 +60,13 @@ public class SocketClient extends Thread {
                     element = obj.get("state");
                     if (element != null && element.getAsString().equals("ok")) {
                         outputStream.write(mData);
+                        outputStream.write(mData);
+                        outputStream.write(mData);
+                        outputStream.write(mData);
+                        outputStream.write(mData);
+                        outputStream.write(mData);
+                        outputStream.write(mData);
+                        outputStream.write(mData);
                         outputStream.flush();
                         break;
                     }
