@@ -8,11 +8,12 @@ import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 
-import com.io.DataListener;
+import com.data.DataListener;
 import com.io.SocketServer;
  
 public class ServerUIMain extends Component implements DataListener{
@@ -20,7 +21,12 @@ public class ServerUIMain extends Component implements DataListener{
     BufferedImage img;
  
     public void paint(Graphics g) {
-        g.drawImage(img, 0, 0, null);
+        Random r = new Random();
+        if (img != null) {
+            synchronized (img) {
+                g.drawImage(img, r.nextInt(50), r.nextInt(50), null);
+            }
+        }
     }
  
     public ServerUIMain() {
@@ -32,7 +38,14 @@ public class ServerUIMain extends Component implements DataListener{
     private void updateUI(byte[] data) {
     	ByteArrayInputStream input = new ByteArrayInputStream(data);
     	try {
-			img = ImageIO.read(input);
+    	    if (img != null) {
+    	        synchronized (img) {
+                    img = ImageIO.read(input);
+                }
+    	    }
+    	    else
+    	        img = ImageIO.read(input);
+    	    
 			input.close();
 		} catch (IOException e) {
 			// TODO Auto-generated catch block

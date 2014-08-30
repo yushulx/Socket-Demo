@@ -7,6 +7,12 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
+import com.data.DataListener;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
+
 public class SocketServer extends Thread {
 	private ServerSocket mServer;
 	private DataListener mDataListener;
@@ -38,38 +44,74 @@ public class SocketServer extends Thread {
 				inputStream = new BufferedInputStream(socket.getInputStream());
 				outputStream = new BufferedOutputStream(socket.getOutputStream());
 				
-				byte[] buff = new byte[1024];
+				byte[] buff = new byte[256];
+				byte[] imageBuff = null;
 				int len = 0;
 				String msg = null;
+				// read msg
 				while ((len = inputStream.read(buff)) != -1) {
 					
 					msg = new String(buff, 0, len);
-					if (msg.equals("who")) {
-					    System.out.println("who's sending msg?");
-					    outputStream.write(new String("who").getBytes());
-			            outputStream.flush();
-					}
-					else if (msg.equals("data")) {
-					    System.out.println("receiving data...");
-					    outputStream.write(new String("data").getBytes());
-	                    outputStream.flush();
-					}
-					else {
-					    byteArray.write(buff, 0, len);
-					}
+					System.out.println(msg);
+					// JSON analysis
+	                JsonParser parser = new JsonParser();
+	                boolean isJSON = true;
+	                JsonElement element = null;
+	                try {
+	                    element =  parser.parse(msg);
+	                }
+	                catch (JsonParseException e) {
+	                    System.out.println("exception: " + e);
+	                    isJSON = false;
+	                }
+	                if (isJSON && element != null) {
+	                    JsonObject obj = element.getAsJsonObject();
+	                    element = obj.get("type");
+	                    if (element != null && element.getAsString().equals("data")) {
+	                        element = obj.get("length");
+	                        if (element != null) {
+	                            int length = element.getAsInt();
+	                            imageBuff = new byte[length];
+	                            break;
+	                        }
+	                        
+	                    }
+	                }
+	                else {
+	                    byteArray.write(buff, 0, len);
+	                    break;
+	                }
 				}
 				
-				System.out.println("received file");
-
-				if (mDataListener != null) {
-					mDataListener.onDirty(byteArray.toByteArray());
+				if (imageBuff != null) {
+				    JsonObject jsonObj = new JsonObject();
+		            jsonObj.addProperty("state", "ok");
+		            outputStream.write(jsonObj.toString().getBytes());
+		            outputStream.flush();
+		            // read image data
+		            int sum = 0;
+		            int buffLen = imageBuff.length;
+				    while ((len = inputStream.read(imageBuff)) != -1) {
+				        System.out.println("len = " + len);
+	                    byteArray.write(imageBuff, 0, len);
+	                    sum += len;
+	                    
+	                    if (mDataListener != null && sum == buffLen) {
+	                        sum = 0;
+	                        mDataListener.onDirty(byteArray.toByteArray());
+	                        System.out.println("received file");
+	                        byteArray.reset();
+	                    }
+	                }
 				}
-
-				socket.close();
-				socket = null;
 				
 				inputStream.close();
 				inputStream = null;
+				
+				outputStream.close();
+				
+				socket.close();
+                socket = null;
 			}
 
 		} catch (IOException e) {
