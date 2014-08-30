@@ -29,7 +29,8 @@ public class ServerUIMain extends JPanel implements DataListener{
         Random r = new Random();
         if (img != null) {
             synchronized (img) {
-                g.drawImage(img, r.nextInt(50), r.nextInt(50), null);
+//                g.drawImage(img, r.nextInt(50), r.nextInt(50), null);
+                g.drawImage(img, 0, 0, null);
             }
         }
     }
@@ -87,6 +88,22 @@ public class ServerUIMain extends JPanel implements DataListener{
 		}
     	repaint();
     }
+    
+    private void updateUI(byte[] data, boolean isYUV) {
+        int[] rgbArray = Utils.convertYUVtoRGB(data, 960, 720);
+        if (img != null) {
+            synchronized (img) {
+                img = new BufferedImage(960, 720, BufferedImage.TYPE_4BYTE_ABGR);
+                img.setRGB(0, 0, 960, 720, rgbArray, 0, 960);
+            }
+        }
+        else {
+            img = new BufferedImage(960, 720, BufferedImage.TYPE_4BYTE_ABGR);
+            img.setRGB(0, 0, 960, 720, rgbArray, 0, 960);
+        } 
+        
+        repaint();
+    }
  
     @Override
     public Dimension getPreferredSize() {
@@ -116,6 +133,6 @@ public class ServerUIMain extends JPanel implements DataListener{
 	@Override
 	public void onDirty(byte[] data) {
 		// TODO Auto-generated method stub
-		updateUI(data);
+		updateUI(data, true);
 	}
 }

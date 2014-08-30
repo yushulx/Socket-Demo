@@ -34,6 +34,8 @@ public class BufferManager {
                 if (mShiftCount < len) {
                     mBufferQueue[mFillCount].fillBuffer(data, mShiftCount);
                     ++mFillCount;
+                    if (mFillCount == 4)
+                        mFillCount = 0;
                     mBufferQueue[mFillCount].fillBuffer(data, len - mShiftCount);
                     mShiftCount = mFrameLength - len + mShiftCount;
                 }

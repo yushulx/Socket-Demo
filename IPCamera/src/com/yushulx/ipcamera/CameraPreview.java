@@ -43,6 +43,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         mCallbackBuffer = new byte[mPreviewSize.width * mPreviewSize.height * ImageFormat.getBitsPerPixel(format) / 8];
         mCamera.setPreviewCallbackWithBuffer(mPreviewCallback);
         mCamera.addCallbackBuffer(mCallbackBuffer);
+        
+        initBuff();
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
@@ -72,6 +74,8 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         try {
             mCamera.setPreviewCallbackWithBuffer(null);
             mCamera.stopPreview();
+            resetBuff();
+            
         } catch (Exception e){
           // ignore: tried to stop a non-existent preview
         }
@@ -94,18 +98,70 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     	mCamera = camera;
     }
     
+    private ImageBuffer[] mBuffer = new ImageBuffer[4];
+    private byte[] mSingleBuffer;
+    
+    public synchronized byte[] getSingleBuffer() {
+        byte[] buffer = new byte[mCallbackBuffer.length];
+        System.arraycopy(mSingleBuffer, 0, buffer, 0, mCallbackBuffer.length);
+        return buffer;
+    }
+    
+    public ImageBuffer[] getBuffer() {
+        return mBuffer;
+    }
+    
+    private int count = 0;
+    private void initBuff() {
+        for (int i = 0; i < mBuffer.length; ++i) {
+            mBuffer[i] = new ImageBuffer(mCallbackBuffer.length);
+        }
+        mSingleBuffer = new byte[mCallbackBuffer.length];
+    }
+    
+    private void resetBuff() {
+        count = 0;
+        for (int i = 0; i < mBuffer.length; ++i) {
+            mBuffer[i].isAvailable = false;;
+        }
+    }
+    
+    public int getPreviewSize() {
+        return mCallbackBuffer.length;
+    }
+    
+    public class ImageBuffer {
+        public byte[] buff;
+        public boolean isAvailable;
+        
+        public ImageBuffer(int len) {
+            buff = new byte[len];
+            isAvailable = false;
+        }
+    }
+    
     private Camera.PreviewCallback mPreviewCallback = new PreviewCallback() {
 
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
             // TODO Auto-generated method stub
-            if (mImageData == null) {
-                mImageData = data;
-                saveRAW(data);
-                saveYUV(data);
-            }
-            else {
-                mImageData = data;
+//            if (mImageData == null) {
+//                mImageData = data;
+//                saveRAW(data);
+//                saveYUV(data);
+//            }
+//            else {
+//                mImageData = data;
+//            }
+            
+//            count = count % 4;
+//            synchronized (mBuffer[count]) {
+//                System.arraycopy(data, 0, mBuffer[count].buff, 0, data.length);
+//                mBuffer[count].isAvailable = true;
+//            }
+            
+            synchronized (CameraPreview.this) {
+                System.arraycopy(data, 0, mSingleBuffer, 0, data.length);
             }
             
             mCamera.addCallbackBuffer(mCallbackBuffer);

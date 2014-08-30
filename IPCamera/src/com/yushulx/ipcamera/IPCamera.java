@@ -14,6 +14,8 @@ import android.widget.Toast;
 public class IPCamera extends Activity {
     private CameraPreview mPreview;
     private CameraManager mCameraManager;
+    private boolean mIsOn = true;
+    private SocketClient mThread;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -26,7 +28,14 @@ public class IPCamera extends Activity {
 		        @Override
 		        public void onClick(View v) {
 		            // get an image from the camera
-		          
+		          if (mIsOn) {
+		              mThread = new SocketClient(mPreview);
+		              mIsOn = false;
+		          }
+		          else {
+		              mIsOn = true;
+		              mThread.interrupt();
+		          }
 		        }
 		    }
 		);
