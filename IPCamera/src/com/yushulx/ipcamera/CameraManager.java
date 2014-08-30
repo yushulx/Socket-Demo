@@ -1,13 +1,25 @@
 package com.yushulx.ipcamera;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+
 import android.content.Context;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
 import android.hardware.Camera.PreviewCallback;
+import android.hardware.Camera.Size;
+import android.os.Environment;
 import android.widget.Toast;
 
 public class CameraManager {
 	private Camera mCamera;
 	private Context mContext;
+
 	
 	public CameraManager(Context context) {
 		mContext = context;
@@ -25,15 +37,6 @@ public class CameraManager {
 			mCamera = null;
 		}
 	}
-
-	private Camera.PreviewCallback mPreviewCallback = new PreviewCallback() {
-
-		@Override
-		public void onPreviewFrame(byte[] data, Camera camera) {
-			// TODO Auto-generated method stub
-
-		}
-	};
 	
 	public void onPause() {
 		releaseCamera();
@@ -59,4 +62,5 @@ public class CameraManager {
 	    }
 	    return c; // returns null if camera is unavailable
 	}
+	
 }

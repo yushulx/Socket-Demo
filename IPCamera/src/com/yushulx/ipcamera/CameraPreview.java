@@ -1,9 +1,19 @@
 package com.yushulx.ipcamera;
 
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 
 import android.content.Context;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.hardware.Camera.PreviewCallback;
+import android.hardware.Camera.Size;
+import android.os.Environment;
 import android.util.Log;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
@@ -13,6 +23,9 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private SurfaceHolder mHolder;
     private Camera mCamera;
     private static final String TAG = "camera";
+    private Size mPreviewSize;
+    private byte[] mCallbackBuffer;
+    private byte[] mImageData;
 
     public CameraPreview(Context context, Camera camera) {
         super(context);
@@ -24,6 +37,12 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         mHolder.addCallback(this);
         // deprecated setting, but required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        
+        mPreviewSize = mCamera.getParameters().getPreviewSize();
+        int format = mCamera.getParameters().getPreviewFormat();
+        mCallbackBuffer = new byte[mPreviewSize.width * mPreviewSize.height * ImageFormat.getBitsPerPixel(format) / 8];
+        mCamera.setPreviewCallbackWithBuffer(mPreviewCallback);
+        mCamera.addCallbackBuffer(mCallbackBuffer);
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
@@ -51,6 +70,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // stop preview before making changes
         try {
+            mCamera.setPreviewCallbackWithBuffer(null);
             mCamera.stopPreview();
         } catch (Exception e){
           // ignore: tried to stop a non-existent preview
@@ -61,6 +81,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // start preview with new settings
         try {
+            mCamera.setPreviewCallback(mPreviewCallback);
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
 
@@ -71,5 +92,58 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     
     public void setCamera(Camera camera) {
     	mCamera = camera;
+    }
+    
+    private Camera.PreviewCallback mPreviewCallback = new PreviewCallback() {
+
+        @Override
+        public void onPreviewFrame(byte[] data, Camera camera) {
+            // TODO Auto-generated method stub
+            if (mImageData == null) {
+                mImageData = data;
+                saveRAW(data);
+                saveYUV(data);
+            }
+            else {
+                mImageData = data;
+            }
+            
+            mCamera.addCallbackBuffer(mCallbackBuffer);
+        }
+    };
+    
+    private void saveYUV(byte[] byteArray) {
+
+        YuvImage im = new YuvImage(byteArray, ImageFormat.NV21, mPreviewSize.width, mPreviewSize.height, null);
+        Rect r = new Rect(0, 0, mPreviewSize.width, mPreviewSize.height);
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        im.compressToJpeg(r, 100, baos);
+
+        try {
+            FileOutputStream output = new FileOutputStream(Environment.getExternalStorageDirectory() + "/yuv.jpg");
+            output.write(baos.toByteArray());
+            output.flush();
+            output.close();
+        } catch (FileNotFoundException e) {
+        } catch (IOException e) {
+        }
+    }
+    
+    private void saveRAW(byte[] byteArray) {
+        try {
+            FileOutputStream file = new FileOutputStream(new File(Environment.getExternalStorageDirectory() + "/test.yuv"));
+            try {
+                file.write(mImageData);
+                file.flush();
+                file.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+            
+        } catch (FileNotFoundException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+        }
     }
 }

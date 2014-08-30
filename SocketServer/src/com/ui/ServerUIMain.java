@@ -1,25 +1,30 @@
 package com.ui;
 
-import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
+import java.io.BufferedInputStream;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
+import javax.swing.JPanel;
 
 import com.data.DataListener;
 import com.io.SocketServer;
  
-public class ServerUIMain extends Component implements DataListener{
+public class ServerUIMain extends JPanel implements DataListener{
            
     BufferedImage img;
  
+    @Override
     public void paint(Graphics g) {
         Random r = new Random();
         if (img != null) {
@@ -30,6 +35,35 @@ public class ServerUIMain extends Component implements DataListener{
     }
  
     public ServerUIMain() {
+        try {
+            BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream("test.yuv"));
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            byte[] buffer = new byte[960 * 720];
+            System.out.println("buffer = " + (960 * 720));
+            int len;
+            int sum = 0;
+            try {
+                while ((len = inputStream.read(buffer)) != -1) {
+                    System.out.println(len);
+                    outputStream.write(buffer, 0, len);
+                    sum += len;
+                }
+                System.out.println("sum = " + sum);
+                int[] rgbArray = Utils.convertYUVtoRGB(outputStream.toByteArray(), 960, 720);
+                img = new BufferedImage(960, 720, BufferedImage.TYPE_4BYTE_ABGR);
+                img.setRGB(0, 0, 960, 720, rgbArray, 0, 960);
+                
+                inputStream.close();
+                outputStream.close();
+            } catch (IOException e) {
+                // TODO Auto-generated catch block
+                e.printStackTrace();
+            }
+        } catch (FileNotFoundException e1) {
+            // TODO Auto-generated catch block
+            e1.printStackTrace();
+        }
+        
     	SocketServer server = new SocketServer();
         server.setOnDataListener(this);
         server.start();
@@ -54,9 +88,10 @@ public class ServerUIMain extends Component implements DataListener{
     	repaint();
     }
  
+    @Override
     public Dimension getPreferredSize() {
         if (img == null) {
-             return new Dimension(640,480);
+             return new Dimension(960,720);
         } else {
            return new Dimension(img.getWidth(null), img.getHeight(null));
        }
@@ -64,9 +99,10 @@ public class ServerUIMain extends Component implements DataListener{
  
     public static void main(String[] args) {
  
-        JFrame f = new JFrame("Load Image Sample");
+        JFrame f = new JFrame("Monitor");
              
         f.addWindowListener(new WindowAdapter(){
+                @Override
                 public void windowClosing(WindowEvent e) {
                     System.exit(0);
                 }
