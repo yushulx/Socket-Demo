@@ -3,18 +3,19 @@ package com.yushulx.ipcamera;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
-import java.net.UnknownHostException;
+import android.util.Log;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
-import com.yushulx.ipcamera.CameraPreview.ImageBuffer;
 
 public class SocketClient extends Thread {
 	private Socket mSocket;
 	private CameraPreview mCameraPreview;
+	private static final String TAG = "socket";
 	
 	public SocketClient(CameraPreview preview) {
 	    mCameraPreview = preview;
@@ -27,13 +28,17 @@ public class SocketClient extends Thread {
 		super.run();
 		
 		try {
-			mSocket = new Socket("192.168.100.109", 2014);
+			mSocket = new Socket();
+			mSocket.connect(new InetSocketAddress("192.168.123.1", 8888), 10000); // hard-code server address
+
 			BufferedOutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
 			BufferedInputStream inputStream = new BufferedInputStream(mSocket.getInputStream());
 			
 			JsonObject jsonObj = new JsonObject();
             jsonObj.addProperty("type", "data");
-            jsonObj.addProperty("length", mCameraPreview.getPreviewSize());
+            jsonObj.addProperty("length", mCameraPreview.getPreviewLength());
+            jsonObj.addProperty("width", mCameraPreview.getPreviewWidth());
+            jsonObj.addProperty("height", mCameraPreview.getPreviewHeight());
             
 			byte[] buff = new byte[256];
 			int len = 0;
@@ -43,7 +48,6 @@ public class SocketClient extends Thread {
                         
             while ((len = inputStream.read(buff)) != -1) {
                 msg = new String(buff, 0, len);
-                System.out.println(msg);
                 
                 // JSON analysis
                 JsonParser parser = new JsonParser();
@@ -53,7 +57,7 @@ public class SocketClient extends Thread {
                     element =  parser.parse(msg);
                 }
                 catch (JsonParseException e) {
-                    System.out.println("exception: " + e);
+                    Log.e(TAG, "exception: " + e);
                     isJSON = false;
                 }
                 if (isJSON && element != null) {
@@ -61,18 +65,8 @@ public class SocketClient extends Thread {
                     element = obj.get("state");
                     if (element != null && element.getAsString().equals("ok")) {
                         // send data
-                        ImageBuffer buffer;
-                        int i = 0;
                         while (true) {
-//                            i = i % 4;
-//                            buffer = mCameraPreview.getBuffer()[i];
-//                            synchronized (buffer) {
-//                                outputStream.write(buffer.buff);
-//                                outputStream.flush();
-//                            }
-//                            
-//                            ++i;
-                            outputStream.write(mCameraPreview.getSingleBuffer());
+                            outputStream.write(mCameraPreview.getImageBuffer());
                             outputStream.flush();
                             
                             if (Thread.currentThread().isInterrupted())
@@ -89,13 +83,11 @@ public class SocketClient extends Thread {
 
 			outputStream.close();
 			inputStream.close();
-		} catch (UnknownHostException e) {
+		} catch (Exception e) {
 			// TODO Auto-generated catch block
-			e.printStackTrace();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
+//			e.printStackTrace();
+			Log.e(TAG, e.toString());
+		} 
 		finally {
 			try {
 				mSocket.close();
@@ -106,7 +98,7 @@ public class SocketClient extends Thread {
 			}
 		}
 		
-		System.out.println("data sent");
+		Log.i(TAG, "data sent");
 	}
 	
 	public void close() {

@@ -11,106 +11,66 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.util.LinkedList;
 import java.util.Random;
 
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
+import com.data.BufferManager;
 import com.data.DataListener;
 import com.io.SocketServer;
  
 public class ServerUIMain extends JPanel implements DataListener{
+	private LinkedList<BufferedImage> mQueue = new LinkedList<BufferedImage>();
+	private static final int MAX_BUFFER = 15;
            
-    BufferedImage img;
+    BufferedImage mImage, mLastFrame;
  
     @Override
     public void paint(Graphics g) {
-        Random r = new Random();
-        if (img != null) {
-            synchronized (img) {
-//                g.drawImage(img, r.nextInt(50), r.nextInt(50), null);
-                g.drawImage(img, 0, 0, null);
-            }
+        synchronized (mQueue) {
+        	if (mQueue.size() > 0) {
+        		mLastFrame = mQueue.poll();
+        	}	
+        }
+        if (mLastFrame != null) {
+        	g.drawImage(mLastFrame, 0, 0, null);
+        }
+        else if (mImage != null) {
+            g.drawImage(mImage, 0, 0, null);
         }
     }
  
     public ServerUIMain() {
-        try {
-            BufferedInputStream inputStream = new BufferedInputStream(new FileInputStream("test.yuv"));
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            byte[] buffer = new byte[960 * 720];
-            System.out.println("buffer = " + (960 * 720));
-            int len;
-            int sum = 0;
-            try {
-                while ((len = inputStream.read(buffer)) != -1) {
-                    System.out.println(len);
-                    outputStream.write(buffer, 0, len);
-                    sum += len;
-                }
-                System.out.println("sum = " + sum);
-                int[] rgbArray = Utils.convertYUVtoRGB(outputStream.toByteArray(), 960, 720);
-                img = new BufferedImage(960, 720, BufferedImage.TYPE_4BYTE_ABGR);
-                img.setRGB(0, 0, 960, 720, rgbArray, 0, 960);
-                
-                inputStream.close();
-                outputStream.close();
-            } catch (IOException e) {
-                // TODO Auto-generated catch block
-                e.printStackTrace();
-            }
-        } catch (FileNotFoundException e1) {
-            // TODO Auto-generated catch block
-            e1.printStackTrace();
-        }
-        
     	SocketServer server = new SocketServer();
         server.setOnDataListener(this);
         server.start();
     }
     
-    private void updateUI(byte[] data) {
-    	ByteArrayInputStream input = new ByteArrayInputStream(data);
-    	try {
-    	    if (img != null) {
-    	        synchronized (img) {
-                    img = ImageIO.read(input);
-                }
-    	    }
-    	    else
-    	        img = ImageIO.read(input);
-    	    
-			input.close();
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-    	repaint();
-    }
-    
-    private void updateUI(byte[] data, boolean isYUV) {
-        int[] rgbArray = Utils.convertYUVtoRGB(data, 960, 720);
-        if (img != null) {
-            synchronized (img) {
-                img = new BufferedImage(960, 720, BufferedImage.TYPE_4BYTE_ABGR);
-                img.setRGB(0, 0, 960, 720, rgbArray, 0, 960);
-            }
+    private void updateUI(byte[] data, int width, int height) {
+    	BufferedImage bufferedImage = null;
+		int[] rgbArray = Utils.convertYUVtoRGB(data, width, height);
+		bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+		bufferedImage.setRGB(0, 0, width, height, rgbArray, 0, width);
+
+        synchronized (mQueue) {
+        	if (mQueue.size() ==  MAX_BUFFER) {
+        		mLastFrame = mQueue.poll();
+        	}	
+        	mQueue.add(bufferedImage);
         }
-        else {
-            img = new BufferedImage(960, 720, BufferedImage.TYPE_4BYTE_ABGR);
-            img.setRGB(0, 0, 960, 720, rgbArray, 0, 960);
-        } 
-        
+   
         repaint();
     }
  
     @Override
     public Dimension getPreferredSize() {
-        if (img == null) {
-             return new Dimension(960,720);
+        if (mImage == null) {
+             return new Dimension(960,720); // init window size
         } else {
-           return new Dimension(img.getWidth(null), img.getHeight(null));
+           return new Dimension(mImage.getWidth(null), mImage.getHeight(null));
        }
     }
  
@@ -131,8 +91,8 @@ public class ServerUIMain extends JPanel implements DataListener{
     }
 
 	@Override
-	public void onDirty(byte[] data) {
+	public void onDirty(byte[] data, int width, int height) {
 		// TODO Auto-generated method stub
-		updateUI(data, true);
+		updateUI(data, width, height);
 	}
 }

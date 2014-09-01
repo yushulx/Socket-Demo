@@ -1,3 +1,4 @@
 bin
 /IPCamera/gen
 /IPCamera/bin
+/SocketClient/*.classpath

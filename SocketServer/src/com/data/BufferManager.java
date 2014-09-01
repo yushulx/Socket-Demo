@@ -1,66 +1,48 @@
 package com.data;
 
-import java.util.ArrayList;
-
 public class BufferManager {
     private ImageBuffer[] mBufferQueue;
     private int mFillCount = 0;
     private final int mFrameLength;
     private int mShiftCount = 0;
-    private boolean mIsFirstFrame = true;
     
-    public BufferManager(int frameLength) {
+    public BufferManager(int frameLength, int width, int height) {
         // TODO Auto-generated constructor stub
         mFrameLength = frameLength;
         mBufferQueue = new ImageBuffer[4];
         for (int i = 0; i < 4; ++i) {
-            mBufferQueue[i] = new ImageBuffer(mFrameLength);
+            mBufferQueue[i] = new ImageBuffer(mFrameLength, width, height);
         }
     }
     
-    public void fillBuffer(byte[] data, int len) {
-        mFillCount = mFillCount % 4;
-        
-//        if (mIsFirstFrame) {
-//            mIsFirstFrame = false;
-//            mBufferQueue[mFillCount].fillBuffer(data, len);
-//        }
-        
-//        if (len < mFrameLength) {
-//            mShiftCount = mFrameLength - len;
-//        }
-//        else {
-            if (mShiftCount != 0) {
-                if (mShiftCount < len) {
-                    mBufferQueue[mFillCount].fillBuffer(data, mShiftCount);
-                    ++mFillCount;
-                    if (mFillCount == 4)
-                        mFillCount = 0;
-                    mBufferQueue[mFillCount].fillBuffer(data, len - mShiftCount);
-                    mShiftCount = mFrameLength - len + mShiftCount;
-                }
-                else if (mShiftCount == len) {
-                    mBufferQueue[mFillCount].fillBuffer(data, mShiftCount);
-                    mShiftCount = 0;
-                    ++mFillCount;
-                }
-                else {
-                    mBufferQueue[mFillCount].fillBuffer(data, len);
-                    mShiftCount = mShiftCount - len;
-                }
-            }
-            else { // best case
-                mBufferQueue[mFillCount].fillBuffer(data, len);
-                
-                if (len < mFrameLength) {
-                    mShiftCount = mFrameLength - len;
-                }
-                else {
-                    ++mFillCount;
-                }
-            }
-//        }
-    }
+	public void fillBuffer(byte[] data, int len) {
+		mFillCount = mFillCount % 4;
+		if (mShiftCount != 0) {
+			if (mShiftCount < len) {
+				mBufferQueue[mFillCount].fillBuffer(data, mShiftCount);
+				++mFillCount;
+				if (mFillCount == 4)
+					mFillCount = 0;
+				mBufferQueue[mFillCount].fillBuffer(data, len - mShiftCount);
+				mShiftCount = mFrameLength - len + mShiftCount;
+			} else if (mShiftCount == len) {
+				mBufferQueue[mFillCount].fillBuffer(data, mShiftCount);
+				mShiftCount = 0;
+				++mFillCount;
+			} else {
+				mBufferQueue[mFillCount].fillBuffer(data, len);
+				mShiftCount = mShiftCount - len;
+			}
+		} else {
+			mBufferQueue[mFillCount].fillBuffer(data, len);
+
+			if (len < mFrameLength) {
+				mShiftCount = mFrameLength - len;
+			} else {
+				++mFillCount;
+			}
+		}
+	}
     
     public void setOnDataListener(DataListener listener) {
         for (ImageBuffer buffer : mBufferQueue) {

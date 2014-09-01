@@ -34,7 +34,7 @@ public class SocketServer extends Thread {
 		Socket socket = null;
 		ByteArrayOutputStream byteArray = null;
 		try {
-			mServer = new ServerSocket(2014);
+			mServer = new ServerSocket(8888);
 			while (!Thread.currentThread().isInterrupted()) {
 				if (byteArray != null)
 					byteArray.reset();
@@ -55,7 +55,6 @@ public class SocketServer extends Thread {
 				while ((len = inputStream.read(buff)) != -1) {
 					
 					msg = new String(buff, 0, len);
-					System.out.println(msg);
 					// JSON analysis
 	                JsonParser parser = new JsonParser();
 	                boolean isJSON = true;
@@ -72,14 +71,16 @@ public class SocketServer extends Thread {
 	                    element = obj.get("type");
 	                    if (element != null && element.getAsString().equals("data")) {
 	                        element = obj.get("length");
-	                        if (element != null) {
-	                            int length = element.getAsInt();
-	                            imageBuff = new byte[length];
-	                            mBufferManager = new BufferManager(length);
-	                            mBufferManager.setOnDataListener(mDataListener);
-	                            break;
-	                        }
+	                        int length = element.getAsInt();
+	                        element = obj.get("width");
+	                        int width = element.getAsInt();
+	                        element = obj.get("height");
+	                        int height = element.getAsInt();
 	                        
+	                        imageBuff = new byte[length];
+                            mBufferManager = new BufferManager(length, width, height);
+                            mBufferManager.setOnDataListener(mDataListener);
+                            break;
 	                    }
 	                }
 	                else {
@@ -93,22 +94,9 @@ public class SocketServer extends Thread {
 		            jsonObj.addProperty("state", "ok");
 		            outputStream.write(jsonObj.toString().getBytes());
 		            outputStream.flush();
+		            
 		            // read image data
-		            int sum = 0;
-		            int buffLen = imageBuff.length;
 				    while ((len = inputStream.read(imageBuff)) != -1) {
-				        System.out.println("len = " + len);
-//	                    byteArray.write(imageBuff, 0, len);
-//	                    sum += len;
-//	                    
-//	                    if (mDataListener != null && sum == buffLen) {
-//	                        sum = 0;
-//	                        mDataListener.onDirty(byteArray.toByteArray());
-//	                        System.out.println("received file");
-//	                        byteArray.reset();
-//	                    }
-	                    
-	                 // buffer manager
 	                    mBufferManager.fillBuffer(imageBuff, len);
 	                }
 				}

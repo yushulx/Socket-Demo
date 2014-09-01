@@ -5,12 +5,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
 import android.content.Context;
 import android.graphics.ImageFormat;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.hardware.Camera;
+import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PreviewCallback;
 import android.hardware.Camera.Size;
 import android.os.Environment;
@@ -24,8 +27,11 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private Camera mCamera;
     private static final String TAG = "camera";
     private Size mPreviewSize;
-    private byte[] mCallbackBuffer;
     private byte[] mImageData;
+    private LinkedList<byte[]> mQueue = new LinkedList<byte[]>();
+    private static final int MAX_BUFFER = 16;
+    private byte[] mLastFrame = null;
+    private int mFrameLength;
 
     public CameraPreview(Context context, Camera camera) {
         super(context);
@@ -37,14 +43,20 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         mHolder.addCallback(this);
         // deprecated setting, but required on Android versions prior to 3.0
         mHolder.setType(SurfaceHolder.SURFACE_TYPE_PUSH_BUFFERS);
+        Parameters params = mCamera.getParameters();
+        List<Size> sizes = params.getSupportedPreviewSizes();
+        for (Size s : sizes) {
+        	Log.i(TAG, "preview size = " + s.width + ", " + s.height);
+        }
+        
+        params.setPreviewSize(320, 240); // set preview size. smaller is better
+        mCamera.setParameters(params);
         
         mPreviewSize = mCamera.getParameters().getPreviewSize();
-        int format = mCamera.getParameters().getPreviewFormat();
-        mCallbackBuffer = new byte[mPreviewSize.width * mPreviewSize.height * ImageFormat.getBitsPerPixel(format) / 8];
-        mCamera.setPreviewCallbackWithBuffer(mPreviewCallback);
-        mCamera.addCallbackBuffer(mCallbackBuffer);
+        Log.i(TAG, "preview size = " + mPreviewSize.width + ", " + mPreviewSize.height);
         
-        initBuff();
+        int format = mCamera.getParameters().getPreviewFormat();
+        mFrameLength = mPreviewSize.width * mPreviewSize.height * ImageFormat.getBitsPerPixel(format) / 8;
     }
 
     public void surfaceCreated(SurfaceHolder holder) {
@@ -72,7 +84,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // stop preview before making changes
         try {
-            mCamera.setPreviewCallbackWithBuffer(null);
             mCamera.stopPreview();
             resetBuff();
             
@@ -85,6 +96,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
 
         // start preview with new settings
         try {
+//        	mCamera.addCallbackBuffer(mCallbackBuffer);
             mCamera.setPreviewCallback(mPreviewCallback);
             mCamera.setPreviewDisplay(mHolder);
             mCamera.startPreview();
@@ -98,46 +110,42 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     	mCamera = camera;
     }
     
-    private ImageBuffer[] mBuffer = new ImageBuffer[4];
-    private byte[] mSingleBuffer;
-    
-    public synchronized byte[] getSingleBuffer() {
-        byte[] buffer = new byte[mCallbackBuffer.length];
-        System.arraycopy(mSingleBuffer, 0, buffer, 0, mCallbackBuffer.length);
-        return buffer;
-    }
-    
-    public ImageBuffer[] getBuffer() {
-        return mBuffer;
-    }
-    
-    private int count = 0;
-    private void initBuff() {
-        for (int i = 0; i < mBuffer.length; ++i) {
-            mBuffer[i] = new ImageBuffer(mCallbackBuffer.length);
-        }
-        mSingleBuffer = new byte[mCallbackBuffer.length];
+    public byte[] getImageBuffer() {
+        synchronized (mQueue) {
+			if (mQueue.size() > 0) {
+				mLastFrame = mQueue.poll();
+			}
+    	}
+        
+        return mLastFrame;
     }
     
     private void resetBuff() {
-        count = 0;
-        for (int i = 0; i < mBuffer.length; ++i) {
-            mBuffer[i].isAvailable = false;;
-        }
-    }
-    
-    public int getPreviewSize() {
-        return mCallbackBuffer.length;
-    }
-    
-    public class ImageBuffer {
-        public byte[] buff;
-        public boolean isAvailable;
         
-        public ImageBuffer(int len) {
-            buff = new byte[len];
-            isAvailable = false;
-        }
+        synchronized (mQueue) {
+        	mQueue.clear();
+        	mLastFrame = null;
+    	}
+    }
+    
+    public int getPreviewLength() {
+        return mFrameLength;
+    }
+    
+    public int getPreviewWidth() {
+    	return mPreviewSize.width;
+    }
+    
+    public int getPreviewHeight() {
+    	return mPreviewSize.height;
+    }
+    
+    public void onPause() {
+    	if (mCamera != null) {
+    		mCamera.setPreviewCallback(null);
+    		mCamera.stopPreview();
+    	}
+    	resetBuff();
     }
     
     private Camera.PreviewCallback mPreviewCallback = new PreviewCallback() {
@@ -145,26 +153,13 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         @Override
         public void onPreviewFrame(byte[] data, Camera camera) {
             // TODO Auto-generated method stub
-//            if (mImageData == null) {
-//                mImageData = data;
-//                saveRAW(data);
-//                saveYUV(data);
-//            }
-//            else {
-//                mImageData = data;
-//            }
-            
-//            count = count % 4;
-//            synchronized (mBuffer[count]) {
-//                System.arraycopy(data, 0, mBuffer[count].buff, 0, data.length);
-//                mBuffer[count].isAvailable = true;
-//            }
-            
-            synchronized (CameraPreview.this) {
-                System.arraycopy(data, 0, mSingleBuffer, 0, data.length);
-            }
-            
-            mCamera.addCallbackBuffer(mCallbackBuffer);
+        	synchronized (mQueue) {
+    			if (mQueue.size() == MAX_BUFFER) {
+    				mQueue.poll();
+    				
+    			}
+    			mQueue.add(data);
+        	}
         }
     };
     

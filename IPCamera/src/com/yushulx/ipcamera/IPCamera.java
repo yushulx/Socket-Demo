@@ -1,15 +1,12 @@
 package com.yushulx.ipcamera;
 
 import android.app.Activity;
-import android.hardware.Camera;
-import android.hardware.Camera.PreviewCallback;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.FrameLayout;
-import android.widget.Toast;
 
 public class IPCamera extends Activity {
     private CameraPreview mPreview;
@@ -34,7 +31,7 @@ public class IPCamera extends Activity {
 		          }
 		          else {
 		              mIsOn = true;
-		              mThread.interrupt();
+		              closeSocketClient();
 		          }
 		        }
 		    }
@@ -69,6 +66,8 @@ public class IPCamera extends Activity {
 	@Override
     protected void onPause() {
         super.onPause();
+        closeSocketClient();
+        mPreview.onPause();
         mCameraManager.onPause();              // release the camera immediately on pause event
     }
 	
@@ -78,5 +77,19 @@ public class IPCamera extends Activity {
 		super.onResume();
 		mCameraManager.onResume();
 		mPreview.setCamera(mCameraManager.getCamera());
+	}
+	
+	private void closeSocketClient() {
+		if (mThread == null)
+			return;
+		
+		mThread.interrupt();
+        try {
+			mThread.join();
+		} catch (InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+        mThread = null;
 	}
 }
