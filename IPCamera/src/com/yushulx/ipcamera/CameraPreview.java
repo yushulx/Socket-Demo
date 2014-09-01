@@ -29,7 +29,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
     private Size mPreviewSize;
     private byte[] mImageData;
     private LinkedList<byte[]> mQueue = new LinkedList<byte[]>();
-    private static final int MAX_BUFFER = 16;
+    private static final int MAX_BUFFER = 15;
     private byte[] mLastFrame = null;
     private int mFrameLength;
 
@@ -156,7 +156,6 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         	synchronized (mQueue) {
     			if (mQueue.size() == MAX_BUFFER) {
     				mQueue.poll();
-    				
     			}
     			mQueue.add(data);
         	}

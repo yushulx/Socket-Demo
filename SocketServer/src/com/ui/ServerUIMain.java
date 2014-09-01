@@ -52,7 +52,7 @@ public class ServerUIMain extends JPanel implements DataListener{
     private void updateUI(byte[] data, int width, int height) {
     	BufferedImage bufferedImage = null;
 		int[] rgbArray = Utils.convertYUVtoRGB(data, width, height);
-		bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_3BYTE_BGR);
+		bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_565_RGB);
 		bufferedImage.setRGB(0, 0, width, height, rgbArray, 0, width);
 
         synchronized (mQueue) {

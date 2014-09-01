@@ -26,9 +26,9 @@ public class ImageBuffer {
         mListener = listener;
     }
     
-    public int fillBuffer(byte[] data, int len) {
+    public int fillBuffer(byte[] data, int off, int len) {
         mTotalLength += len;
-        mByteArrayOutputStream.write(data, 0, len);
+        mByteArrayOutputStream.write(data, off, len);
         
         if (mListener != null && mTotalLength == mFrameLength) {
         	long t = System.currentTimeMillis();

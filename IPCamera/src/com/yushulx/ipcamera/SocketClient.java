@@ -30,7 +30,6 @@ public class SocketClient extends Thread {
 		try {
 			mSocket = new Socket();
 			mSocket.connect(new InetSocketAddress("192.168.123.1", 8888), 10000); // hard-code server address
-
 			BufferedOutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
 			BufferedInputStream inputStream = new BufferedInputStream(mSocket.getInputStream());
 			
