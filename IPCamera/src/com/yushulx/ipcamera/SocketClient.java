@@ -16,6 +16,15 @@ public class SocketClient extends Thread {
 	private Socket mSocket;
 	private CameraPreview mCameraPreview;
 	private static final String TAG = "socket";
+	private String mIP = "192.168.123.1";
+	private int mPort = 8888;
+	
+	public SocketClient(CameraPreview preview, String ip, int port) {
+	    mCameraPreview = preview;
+	    mIP = ip;
+	    mPort = port;
+		start();
+	}
 	
 	public SocketClient(CameraPreview preview) {
 	    mCameraPreview = preview;
@@ -29,7 +38,7 @@ public class SocketClient extends Thread {
 		
 		try {
 			mSocket = new Socket();
-			mSocket.connect(new InetSocketAddress("192.168.123.1", 8888), 10000); // hard-code server address
+			mSocket.connect(new InetSocketAddress(mIP, mPort), 10000); // hard-code server address
 			BufferedOutputStream outputStream = new BufferedOutputStream(mSocket.getOutputStream());
 			BufferedInputStream inputStream = new BufferedInputStream(mSocket.getInputStream());
 			
@@ -96,8 +105,6 @@ public class SocketClient extends Thread {
 				e.printStackTrace();
 			}
 		}
-		
-		Log.i(TAG, "data sent");
 	}
 	
 	public void close() {
