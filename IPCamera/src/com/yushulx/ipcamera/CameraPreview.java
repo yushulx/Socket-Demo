@@ -46,7 +46,7 @@ public class CameraPreview extends SurfaceView implements SurfaceHolder.Callback
         	Log.i(TAG, "preview size = " + s.width + ", " + s.height);
         }
         
-        params.setPreviewSize(320, 240); // set preview size. smaller is better
+        params.setPreviewSize(640, 480); // set preview size. smaller is better
         mCamera.setParameters(params);
         
         mPreviewSize = mCamera.getParameters().getPreviewSize();

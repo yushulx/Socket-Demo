@@ -100,6 +100,10 @@ public class SocketServer extends Thread {
 	                    mBufferManager.fillBuffer(imageBuff, len);
 	                }
 				}
+				
+				if (mBufferManager != null) {
+					mBufferManager.close();
+				}
 			}
 
 		} catch (IOException e) {

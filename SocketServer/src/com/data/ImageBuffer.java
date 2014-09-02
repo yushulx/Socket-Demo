@@ -1,38 +1,32 @@
 package com.data;
 
 import java.io.ByteArrayOutputStream;
+import java.util.LinkedList;
 
-public class ImageBuffer {
+public class ImageBuffer{
 
-    public boolean isFull = false;
     private int mTotalLength = 0;
     private final int mFrameLength;
-    private DataListener mListener;
     private ByteArrayOutputStream mByteArrayOutputStream;
-    private int mWidth, mHeight;
     
     public ImageBuffer(int frameLength, int width, int height) {
         mByteArrayOutputStream = new ByteArrayOutputStream();
         mFrameLength = frameLength;
-        mWidth = width;
-        mHeight = height;
     }
     
-    public void setOnDataListener(DataListener listener) {
-        mListener = listener;
-    }
-    
-    public int fillBuffer(byte[] data, int off, int len) {
+    public int fillBuffer(byte[] data, int off, int len, LinkedList<byte[]> YUVQueue) {
         mTotalLength += len;
         mByteArrayOutputStream.write(data, off, len);
         
-        if (mListener != null && mTotalLength == mFrameLength) {
-        	long t = System.currentTimeMillis();
-            mListener.onDirty(mByteArrayOutputStream.toByteArray(), mWidth, mHeight);
-            mByteArrayOutputStream.reset();
+        if (mTotalLength == mFrameLength) {
+            
+            synchronized (YUVQueue) {
+            	YUVQueue.add(mByteArrayOutputStream.toByteArray());
+            	mByteArrayOutputStream.reset();
+            }
+            
+            mTotalLength = 0;         
             System.out.println("received file");
-            mTotalLength = 0;
-            System.out.println("time cost = " + (System.currentTimeMillis() - t));
         }
         
         return 0;

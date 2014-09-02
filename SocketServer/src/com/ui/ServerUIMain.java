@@ -5,20 +5,10 @@ import java.awt.Graphics;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
-import java.io.BufferedInputStream;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.util.LinkedList;
-import java.util.Random;
-
-import javax.imageio.ImageIO;
 import javax.swing.JFrame;
 import javax.swing.JPanel;
 
-import com.data.BufferManager;
 import com.data.DataListener;
 import com.io.SocketServer;
  
@@ -49,11 +39,7 @@ public class ServerUIMain extends JPanel implements DataListener{
         server.start();
     }
     
-    private void updateUI(byte[] data, int width, int height) {
-    	BufferedImage bufferedImage = null;
-		int[] rgbArray = Utils.convertYUVtoRGB(data, width, height);
-		bufferedImage = new BufferedImage(width, height, BufferedImage.TYPE_USHORT_565_RGB);
-		bufferedImage.setRGB(0, 0, width, height, rgbArray, 0, width);
+    private void updateUI(BufferedImage bufferedImage) {
 
         synchronized (mQueue) {
         	if (mQueue.size() ==  MAX_BUFFER) {
@@ -91,8 +77,8 @@ public class ServerUIMain extends JPanel implements DataListener{
     }
 
 	@Override
-	public void onDirty(byte[] data, int width, int height) {
+	public void onDirty(BufferedImage bufferedImage) {
 		// TODO Auto-generated method stub
-		updateUI(data, width, height);
+		updateUI(bufferedImage);
 	}
 }

@@ -1,5 +1,7 @@
 package com.data;
 
+import java.awt.image.BufferedImage;
+
 public interface DataListener {
-	public void onDirty(byte[] data, int width, int height);
+	public void onDirty(BufferedImage bufferedImage);
 }
