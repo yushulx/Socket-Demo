@@ -18,10 +18,6 @@ public class ImageBuffer {
         mHeight = height;
     }
     
-    public int isFull() {
-        return mFrameLength - mTotalLength;
-    }
-    
     public void setOnDataListener(DataListener listener) {
         mListener = listener;
     }

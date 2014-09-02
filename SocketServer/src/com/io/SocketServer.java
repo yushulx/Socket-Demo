@@ -100,14 +100,6 @@ public class SocketServer extends Thread {
 	                    mBufferManager.fillBuffer(imageBuff, len);
 	                }
 				}
-				
-				inputStream.close();
-				inputStream = null;
-				
-				outputStream.close();
-				
-				socket.close();
-                socket = null;
 			}
 
 		} catch (IOException e) {
@@ -115,12 +107,19 @@ public class SocketServer extends Thread {
 			e.printStackTrace();
 		} finally {
 			try {
+				if (outputStream != null) {
+					outputStream.close();
+					outputStream = null;
+				}
+				
 				if (inputStream != null) {
 					inputStream.close();
+					inputStream = null;
 				}
 
 				if (socket != null) {
 					socket.close();
+	                socket = null;
 				}
 				
 				if (byteArray != null) {
